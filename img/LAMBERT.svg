@@ -1717,4 +1717,135 @@
 				<v:ud v:nameU="visVersion" v:prompt="" v:val="VT0(15):26"/>
 				<v:ud v:nameU="TopLeftOffset" v:prompt="" v:val="VT0(0.13983129585689):1"/>
 				<v:ud v:nameU="TopRightOffset" v:prompt="" v:val="VT0(0.13983129585689):1"/>
-				<v:ud v:nameU="BotLeftOffset" v:prompt=""
+				<v:ud v:nameU="BotLeftOffset" v:prompt="" v:val="VT0(0.13983129585689):1"/>
+				<v:ud v:nameU="BotRightOffset" v:prompt="" v:val="VT0(0.13983129585689):1"/>
+			</v:userDefs>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="50.3393" cy="250.78" width="100.68" height="34.1457"/>
+			<path d="M10.07 267.85 L90.61 267.85 A10.0677 10.0677 -180 0 0 100.68 257.79 L100.68 243.78 A10.0677 10.0677 -180 0 0
+						 90.61 233.71 L10.07 233.71 A10.0677 10.0677 -180 0 0 0 243.78 L0 257.79 A10.0677 10.0677 -180 0 0 10.07
+						 267.85 Z" class="st5"/>
+			<text x="5.18" y="254.38" class="st43" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Additive Attention</text>		</g>
+		<g id="shape411-667" v:mID="411" v:groupContext="shape" v:layerMember="0" transform="translate(465.158,-120.835)">
+			<title>动态连接线.411</title>
+			<path d="M0 267.85 L30.76 252.47" class="st45"/>
+		</g>
+		<g id="shape413-673" v:mID="413" v:groupContext="shape" v:layerMember="0" transform="translate(488.289,-120.409)">
+			<title>动态连接线.413</title>
+			<path d="M2.95 267.85 L9.41 254.14" class="st45"/>
+		</g>
+		<g id="shape414-678" v:mID="414" v:groupContext="shape" v:layerMember="0" transform="translate(530.497,-120.636)">
+			<title>动态连接线.414</title>
+			<path d="M0 267.85 L-27.17 252.65" class="st45"/>
+		</g>
+		<g id="shape205-683" v:mID="205" v:groupContext="shape" transform="translate(449.233,-92.3548)">
+			<title>圆角矩形.464</title>
+			<desc>Add &#38; Norm</desc>
+			<v:userDefs>
+				<v:ud v:nameU="CTypeTopLeftSnip" v:prompt="" v:val="VT0(0):5"/>
+				<v:ud v:nameU="CTypeTopRightSnip" v:prompt="" v:val="VT0(0):5"/>
+				<v:ud v:nameU="CTypeBotLeftSnip" v:prompt="" v:val="VT0(0):5"/>
+				<v:ud v:nameU="CTypeBotRightSnip" v:prompt="" v:val="VT0(0):5"/>
+				<v:ud v:nameU="CornerLockHoriz" v:prompt="" v:val="VT0(1):5"/>
+				<v:ud v:nameU="CornerLockVert" v:prompt="" v:val="VT0(1):5"/>
+				<v:ud v:nameU="CornerLockDiag" v:prompt="" v:val="VT0(0):5"/>
+				<v:ud v:nameU="TopLeftOffset" v:prompt="" v:val="VT0(0.15748031496063):24"/>
+				<v:ud v:nameU="TopRightOffset" v:prompt="" v:val="VT0(0.15748031496063):24"/>
+				<v:ud v:nameU="BotLeftOffset" v:prompt="" v:val="VT0(0.15748031496063):24"/>
+				<v:ud v:nameU="BotRightOffset" v:prompt="" v:val="VT0(0.15748031496063):24"/>
+				<v:ud v:nameU="visVersion" v:prompt="" v:val="VT0(15):26"/>
+				<v:ud v:nameU="TopLeftOffset" v:prompt="" v:val="VT0(0.13983129585689):1"/>
+				<v:ud v:nameU="TopRightOffset" v:prompt="" v:val="VT0(0.13983129585689):1"/>
+				<v:ud v:nameU="BotLeftOffset" v:prompt="" v:val="VT0(0.13983129585689):1"/>
+				<v:ud v:nameU="BotRightOffset" v:prompt="" v:val="VT0(0.13983129585689):1"/>
+			</v:userDefs>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="50.3393" cy="253.727" width="100.68" height="28.252"/>
+			<path d="M10.07 267.85 L90.61 267.85 A10.0677 10.0677 -180 0 0 100.68 257.79 L100.68 249.67 A10.0677 10.0677 -180 0 0
+						 90.61 239.6 L10.07 239.6 A10.0677 10.0677 -180 0 0 0 249.67 L0 257.79 A10.0677 10.0677 -180 0 0 10.07 267.85
+						 Z" class="st5"/>
+			<text x="18.34" y="257.33" class="st43" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Add &#38; Norm</text>		</g>
+		<g id="shape211-686" v:mID="211" v:groupContext="shape" transform="translate(247.573,-229.607)">
+			<title>圆角矩形.475</title>
+			<desc>Long-Term Byte Sequence Modeling</desc>
+			<v:userDefs>
+				<v:ud v:nameU="CTypeTopLeftSnip" v:prompt="" v:val="VT0(0):5"/>
+				<v:ud v:nameU="CTypeTopRightSnip" v:prompt="" v:val="VT0(0):5"/>
+				<v:ud v:nameU="CTypeBotLeftSnip" v:prompt="" v:val="VT0(0):5"/>
+				<v:ud v:nameU="CTypeBotRightSnip" v:prompt="" v:val="VT0(0):5"/>
+				<v:ud v:nameU="CornerLockHoriz" v:prompt="" v:val="VT0(1):5"/>
+				<v:ud v:nameU="CornerLockVert" v:prompt="" v:val="VT0(1):5"/>
+				<v:ud v:nameU="CornerLockDiag" v:prompt="" v:val="VT0(0):5"/>
+				<v:ud v:nameU="TopLeftOffset" v:prompt="" v:val="VT0(0.15748031496063):24"/>
+				<v:ud v:nameU="TopRightOffset" v:prompt="" v:val="VT0(0.15748031496063):24"/>
+				<v:ud v:nameU="BotLeftOffset" v:prompt="" v:val="VT0(0.15748031496063):24"/>
+				<v:ud v:nameU="BotRightOffset" v:prompt="" v:val="VT0(0.15748031496063):24"/>
+				<v:ud v:nameU="visVersion" v:prompt="" v:val="VT0(15):26"/>
+				<v:ud v:nameU="TopLeftOffset" v:prompt="" v:val="VT0(0.16732282930568):1"/>
+				<v:ud v:nameU="TopRightOffset" v:prompt="" v:val="VT0(0.16732282930568):1"/>
+				<v:ud v:nameU="BotLeftOffset" v:prompt="" v:val="VT0(0.16732282930568):1"/>
+				<v:ud v:nameU="BotRightOffset" v:prompt="" v:val="VT0(0.16732282930568):1"/>
+			</v:userDefs>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="60.2362" cy="250.78" width="120.48" height="34.1457"/>
+			<path d="M12.05 267.85 L108.43 267.85 A12.047 12.047 -180 0 0 120.47 255.81 L120.47 245.75 A12.047 12.047 -180 0 0 108.43
+						 233.71 L12.05 233.71 A12.047 12.047 -180 0 0 0 245.75 L0 255.81 A12.047 12.047 -180 0 0 12.05 267.85 Z"
+					class="st18"/>
+			<text x="17.41" y="247.18" class="st3" v:langID="1033"><v:paragraph v:horizAlign="1"/><v:tabList/>Long-Term Byte <tspan
+						x="10.4" dy="1.2em" class="st44">Sequence Modeling</tspan></text>		</g>
+		<g id="shape214-690" v:mID="214" v:groupContext="shape" transform="translate(319.006,-201.346)">
+			<title>圆角矩形.714</title>
+			<desc>GRU</desc>
+			<v:userDefs>
+				<v:ud v:nameU="CTypeTopLeftSnip" v:prompt="" v:val="VT0(0):5"/>
+				<v:ud v:nameU="CTypeTopRightSnip" v:prompt="" v:val="VT0(0):5"/>
+				<v:ud v:nameU="CTypeBotLeftSnip" v:prompt="" v:val="VT0(0):5"/>
+				<v:ud v:nameU="CTypeBotRightSnip" v:prompt="" v:val="VT0(0):5"/>
+				<v:ud v:nameU="CornerLockHoriz" v:prompt="" v:val="VT0(1):5"/>
+				<v:ud v:nameU="CornerLockVert" v:prompt="" v:val="VT0(1):5"/>
+				<v:ud v:nameU="CornerLockDiag" v:prompt="" v:val="VT0(0):5"/>
+				<v:ud v:nameU="TopLeftOffset" v:prompt="" v:val="VT0(0.15748031496063):24"/>
+				<v:ud v:nameU="TopRightOffset" v:prompt="" v:val="VT0(0.15748031496063):24"/>
+				<v:ud v:nameU="BotLeftOffset" v:prompt="" v:val="VT0(0.15748031496063):24"/>
+				<v:ud v:nameU="BotRightOffset" v:prompt="" v:val="VT0(0.15748031496063):24"/>
+				<v:ud v:nameU="visVersion" v:prompt="" v:val="VT0(15):26"/>
+				<v:ud v:nameU="TopLeftOffset" v:prompt="" v:val="VT0(0.049212596854611):1"/>
+				<v:ud v:nameU="TopRightOffset" v:prompt="" v:val="VT0(0.049212596854611):1"/>
+				<v:ud v:nameU="BotLeftOffset" v:prompt="" v:val="VT0(0.049212596854611):1"/>
+				<v:ud v:nameU="BotRightOffset" v:prompt="" v:val="VT0(0.049212596854611):1"/>
+			</v:userDefs>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="17.7165" cy="257.223" width="35.44" height="21.2598"/>
+			<path d="M3.54 267.85 L31.89 267.85 A3.54325 3.54325 -180 0 0 35.43 264.31 L35.43 250.14 A3.54325 3.54325 -180 0 0 31.89
+						 246.59 L3.54 246.59 A3.54325 3.54325 -180 0 0 -0 250.14 L0 264.31 A3.54325 3.54325 -180 0 0 3.54 267.85
+						 Z" class="st18"/>
+			<text x="7.16" y="260.22" class="st12" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>GRU</text>		</g>
+		<g id="shape215-693" v:mID="215" v:groupContext="shape" transform="translate(319.006,-164.921)">
+			<title>圆角矩形.713</title>
+			<desc>GRU</desc>
+			<v:userDefs>
+				<v:ud v:nameU="CTypeTopLeftSnip" v:prompt="" v:val="VT0(0):5"/>
+				<v:ud v:nameU="CTypeTopRightSnip" v:prompt="" v:val="VT0(0):5"/>
+				<v:ud v:nameU="CTypeBotLeftSnip" v:prompt="" v:val="VT0(0):5"/>
+				<v:ud v:nameU="CTypeBotRightSnip" v:prompt="" v:val="VT0(0):5"/>
+				<v:ud v:nameU="CornerLockHoriz" v:prompt="" v:val="VT0(1):5"/>
+				<v:ud v:nameU="CornerLockVert" v:prompt="" v:val="VT0(1):5"/>
+				<v:ud v:nameU="CornerLockDiag" v:prompt="" v:val="VT0(0):5"/>
+				<v:ud v:nameU="TopLeftOffset" v:prompt="" v:val="VT0(0.15748031496063):24"/>
+				<v:ud v:nameU="TopRightOffset" v:prompt="" v:val="VT0(0.15748031496063):24"/>
+				<v:ud v:nameU="BotLeftOffset" v:prompt="" v:val="VT0(0.15748031496063):24"/>
+				<v:ud v:nameU="BotRightOffset" v:prompt="" v:val="VT0(0.15748031496063):24"/>
+				<v:ud v:nameU="visVersion" v:prompt="" v:val="VT0(15):26"/>
+				<v:ud v:nameU="TopLeftOffset" v:prompt="" v:val="VT0(0.049212596854611):1"/>
+				<v:ud v:nameU="TopRightOffset" v:prompt="" v:val="VT0(0.049212596854611):1"/>
+				<v:ud v:nameU="BotLeftOffset" v:prompt="" v:val="VT0(0.049212596854611):1"/>
+				<v:ud v:nameU="BotRightOffset" v:prompt="" v:val="VT0(0.049212596854611):1"/>
+			</v:userDefs>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="17.7165" cy="257.223" width="35.44" height="21.2598"/>
+			<path d="M3.54 267.85 L31.89 267.85 A3.54325 3.54325 -180 0 0 35.43 264.31 L35.43 250.14 A3.54325 3.54325 -180 0 0 31.89
+						 246.59 L3.54 246.59 A3.54325 3.54325 -180 0 0 -0 250.14 L0 264.31 A3.54325 3.54325 -180 0 0 3.54 267.85
+						 Z" class="st18"/>
+			<text x="7.16" y="260.22" class="st12" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>GRU</text>		</g>
+		<g id="shape216-696" v:mID="216" v:groupContext="shape" transform="translate(319.006,-128.496)">
+			<title
