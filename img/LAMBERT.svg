@@ -10033,4 +10033,28 @@
 			<rect x="0" y="251.048" width="17.4331" height="16.8054" class="st15"/>
 			<text x="5.32" y="261.85" class="st52" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>α<tspan dy="-0.279em"
 						class="st53" v:baseFontSize="8">0</tspan></text>		</g>
-		<g id="shape417-1126" v:mID="417" v:groupContext="shape" transform="translate(479.
+		<g id="shape417-1126" v:mID="417" v:groupContext="shape" transform="translate(479.898,-119.721)">
+			<title>工作表.417</title>
+			<desc>α1</desc>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="8.71654" cy="259.451" width="17.44" height="16.8054"/>
+			<rect x="0" y="251.048" width="17.4331" height="16.8054" class="st15"/>
+			<text x="5.32" y="261.85" class="st52" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>α<tspan dy="-0.279em"
+						class="st53" v:baseFontSize="8">1</tspan></text>		</g>
+		<g id="shape418-1131" v:mID="418" v:groupContext="shape" transform="translate(519.381,-120.126)">
+			<title>工作表.418</title>
+			<desc>αn</desc>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="8.71654" cy="259.451" width="17.44" height="16.8054"/>
+			<rect x="0" y="251.048" width="17.4331" height="16.8054" class="st15"/>
+			<text x="5.32" y="261.85" class="st52" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>α<tspan dy="-0.279em"
+						class="st53" v:baseFontSize="8">n</tspan></text>		</g>
+		<g id="shape423-1136" v:mID="423" v:groupContext="shape" transform="translate(660.232,176.782) rotate(90)">
+			<title>工作表.423</title>
+			<desc>...</desc>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="10.6299" cy="257.223" width="21.26" height="21.2598"/>
+			<rect x="0" y="246.594" width="21.2598" height="21.2598" class="st15"/>
+			<text x="6.13" y="260.82" class="st17" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>...</text>		</g>
+	</g>
+</svg>
