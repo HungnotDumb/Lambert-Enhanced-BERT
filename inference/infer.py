@@ -183,4 +183,8 @@ def main():
     # Evaluation phase.
     if args.test_path is not None:
         print("Test set evaluation.")
-   
+        evaluate(args, read_dataset(args, args.test_path))
+
+
+if __name__ == "__main__":
+    main()
