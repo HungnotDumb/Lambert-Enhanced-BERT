@@ -48,4 +48,41 @@ def deal_finetuning(excluding_label):
     while label_number > 105:
         for index in range(len(train_data)):
             data = train_data[index]
-            i
+            if str(label_number)+'\t' in data:
+                new_data = data.replace(str(label_number)+'\t',str(excluding_label[count])+'\t')
+                train_data[index] = new_data
+
+        for index in range(len(valid_data)):
+            if str(label_number)+'\t' in valid_data[index]:
+                new_data = valid_data[index].replace(str(label_number)+'\t',str(excluding_label[count])+'\t')
+                valid_data[index] = new_data
+
+        for index in range(len(test_data)):
+            if str(label_number)+'\t' in test_data[index]:
+                new_data = test_data[index].replace(str(label_number)+'\t',str(excluding_label[count])+'\t')
+                test_data[index] = new_data
+                
+        label_number -= 1
+        count += 1
+    
+    with open(save_dataset_path+"train_dataset.tsv",'w') as f:
+        f.write("label\ttext_a\n")
+        for data in train_data:
+            f.write(data+'\n')
+    with open(save_dataset_path+"valid_dataset.tsv",'w') as f:
+        f.write("label\ttext_a\n")
+        for data in valid_data:
+            f.write(data+'\n')
+    with open(save_dataset_path+"test_dataset.tsv",'w') as f:
+        f.write("label\ttext_a\n")
+        for data in test_data:
+            f.write(data+'\n')
+            
+    deal_result = input("please delete the last blank line in %s and input '1'"%(save_dataset_path+"test_dataset.tsv"))
+    if deal_result == '1':
+        unlabel_data(save_dataset_path+"test_dataset.tsv")
+    return 0
+
+if __name__ == '__main__':
+    excluding_laebl = deal_label()
+    deal_finetuning(excluding_laebl)
