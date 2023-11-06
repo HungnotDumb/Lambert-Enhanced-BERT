@@ -164,4 +164,75 @@ def models_deal(model, X_dataset, Y_dataset, x_payload_train, x_payload_test, x_
 def write_dataset_tsv(data,label,file_dir,type):
     dataset_file = [["label", "text_a"]]
     for index in range(len(label)):
-   
+        dataset_file.append([label[index], data[index]])
+    with open(file_dir + type + "_dataset.tsv", 'w',newline='') as f:
+        tsv_w = csv.writer(f, delimiter='\t')
+        tsv_w.writerows(dataset_file)
+    return 0
+
+def unlabel_data(label_data):
+    nolabel_data = ""
+    with open(label_data,newline='') as f:
+        data = csv.reader(f,delimiter='\t')
+        for row in data:
+            nolabel_data += row[1] + '\n'
+    nolabel_file = label_data.replace("test_dataset","nolabel_test_dataset")
+    #nolabel_file = label_data.replace("train_dataset", "nolabel_train_dataset")
+    with open(nolabel_file, 'w',newline='') as f:
+        f.write(nolabel_data)
+    return 0
+
+def cut_byte(obj, sec):
+    result = [obj[i:i+sec] for i in range(0,len(obj),sec)]
+    remanent_count = len(result[0])%2
+    if remanent_count == 0:
+        pass
+    else:
+        result = [obj[i:i+sec+remanent_count] for i in range(0,len(obj),sec+remanent_count)]
+    return result
+
+def pickle_save_data(path_file, data):
+    with open(path_file, "wb") as f:
+        pickle.dump(data, f)
+    return 0
+
+def count_label_number(samples):
+    new_samples = samples * _category
+    
+    if 'splitcap' not in pcap_path:
+        dataset_length, labels = open_dataset_deal.statistic_dataset_sample_count(pcap_path + 'splitcap\\')
+    else:
+        dataset_length, labels = open_dataset_deal.statistic_dataset_sample_count(pcap_path)
+
+    for index in range(len(dataset_length)):
+        if dataset_length[index] < samples[0]:
+            print("label %s has less sample's number than defined samples %d" % (labels[index], samples[0]))、
+            new_samples[index] = dataset_length[index]
+    return new_samples
+
+if __name__ == '__main__':、
+    open_dataset_not_pcap = 0
+    
+    if open_dataset_not_pcap:
+        #open_dataset_deal.dataset_file2dir(pcap_path)
+        for p,d,f in os.walk(pcap_path):
+            for file in f:
+                target_file = file.replace('.','_new.')
+                open_dataset_deal.file_2_pcap(p+"\\"+file, p+"\\"+target_file)
+                if '_new.pcap' not in file:
+                    os.remove(p+"\\"+file)
+
+    file2dir = 0
+    if file2dir:
+        open_dataset_deal.dataset_file2dir(pcap_path)
+
+    splitcap_finish = 0
+    if splitcap_finish:
+        samples = count_label_number(samples)
+    else:
+        samples = samples * _category
+
+    train_model = ["pre-train"]
+    ml_experiment = 0
+
+    dataset_extract(train_model)
