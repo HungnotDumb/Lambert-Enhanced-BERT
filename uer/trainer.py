@@ -196,4 +196,227 @@ class BertTrainer(Trainer):
         print("| {:8d}/{:8d} steps"
               "| {:8.2f} tokens/s"
               "| loss {:7.2f}"
-              "| loss_mlm: {:
+              "| loss_mlm: {:3.3f}"
+              "| loss_sp: {:3.3f}"
+              "| acc_mlm: {:3.3f}"
+              "| acc_sp: {:3.3f}".format(
+            self.current_step,
+            self.total_steps,
+            done_tokens / (time.time() - self.start_time),
+            self.total_loss / self.report_steps,
+            self.total_loss_mlm / self.report_steps,
+            self.total_loss_sp / self.report_steps,
+            self.total_correct_mlm / self.total_denominator,
+            self.total_correct_sp / self.total_instances))
+
+        self.total_loss, self.total_loss_mlm, self.total_loss_sp = 0.0, 0.0, 0.0
+        self.total_correct_mlm, self.total_denominator = 0.0, 0.0
+        self.total_correct_sp, self.total_instances = 0.0, 0.0
+
+
+class AlbertTrainer(BertTrainer):
+    pass
+
+
+class LmTrainer(MlmTrainer):
+    pass
+
+
+class BilmTrainer(Trainer):
+    def __init__(self, args):
+        super(BilmTrainer, self).__init__(args)
+        self.total_loss_forward, self.total_loss_backward = 0.0, 0.0
+        self.total_correct_forward, self.total_correct_backward = 0.0, 0.0
+        self.total_denominator = 0.0
+
+    def forward_propagation(self, batch, model):
+        src, tgt_forward, tgt_backward, seg = batch
+        loss_info = model(src, (tgt_forward, tgt_backward), seg)
+        loss_forward, loss_backward, correct_forward, correct_backward, denominator = loss_info
+        loss = loss_forward + loss_backward
+        self.total_loss += loss.item()
+        self.total_loss_forward += loss_forward.item()
+        self.total_loss_backward += loss_backward.item()
+        self.total_correct_forward += correct_forward.item()
+        self.total_correct_backward += correct_backward.item()
+        self.total_denominator += denominator.item()
+        loss = loss / self.accumulation_steps
+        return loss
+
+    def report_and_reset_stats(self):
+        done_tokens = self.batch_size * self.seq_length * self.report_steps
+        if self.dist_train:
+            done_tokens *= self.world_size
+        print("| {:8d}/{:8d} steps"
+                  "| {:8.2f} tokens/s"
+                  "| loss {:7.2f}"
+                  "| loss_forward {:3.3f}"
+                  "| loss_backward {:3.3f}"
+                  "| acc_forward: {:3.3f}"
+                  "| acc_backward: {:3.3f}".format(
+                    self.current_step,
+                    self.total_steps, 
+                    done_tokens / (time.time() - self.start_time), 
+                    self.total_loss / self.report_steps,
+                    self.total_loss_forward / self.report_steps,
+                    self.total_loss_backward / self.report_steps,
+                    self.total_correct_forward / self.total_denominator,
+                    self.total_correct_backward / self.total_denominator))
+
+        self.total_loss, self.total_loss_forward, self.total_loss_backward = 0.0, 0.0, 0.0
+        self.total_correct_forward, self.total_correct_backward, self.total_denominator = 0.0, 0.0, 0.0
+
+
+class ClsTrainer(Trainer):
+    def __init__(self, args):
+        super(ClsTrainer, self).__init__(args)
+        self.total_correct = 0.0
+        self.total_instances = 0.0
+
+    def forward_propagation(self, batch, model):
+        src, tgt, seg = batch
+        loss_info = model(src, tgt, seg)
+        loss, correct = loss_info
+        self.total_loss += loss.item()
+        self.total_correct += correct.item()
+        self.total_instances += src.size(0)
+        loss = loss / self.accumulation_steps
+        return loss
+
+    def report_and_reset_stats(self):
+        done_tokens = self.batch_size * self.seq_length * self.report_steps
+        if self.dist_train:
+            done_tokens *= self.world_size
+        print("| {:8d}/{:8d} steps"
+              "| {:8.2f} tokens/s"
+              "| loss {:7.2f}"
+              "| acc: {:3.3f}".format(
+            self.current_step,
+            self.total_steps,
+            done_tokens / (time.time() - self.start_time),
+            self.total_loss / self.report_steps,
+            self.total_correct / self.total_instances))
+
+        self.total_loss = 0.0
+        self.total_correct = 0.0
+        self.total_instances = 0.0
+
+
+class Seq2seqTrainer(Trainer):
+    def __init__(self, args):
+        super(Seq2seqTrainer, self).__init__(args)
+        self.total_correct = 0.0
+        self.total_denominator = 0.0
+
+    def forward_propagation(self, batch, model):
+        src, tgt_in, tgt_out, seg = batch
+        loss_info = model(src, (tgt_in, tgt_out, src), seg)
+        loss, correct, denominator = loss_info
+        self.total_loss += loss.item()
+        self.total_correct += correct.item()
+        self.total_denominator += denominator.item()
+
+        loss = loss / self.accumulation_steps
+
+        return loss
+
+    def report_and_reset_stats(self):
+        done_tokens = self.batch_size * self.seq_length * self.report_steps
+        if self.dist_train:
+            done_tokens *= self.world_size
+
+        print("| {:8d}/{:8d} steps"
+              "| {:8.2f} tokens/s"
+              "| loss {:7.2f}"
+              "| acc: {:3.3f}".format(
+            self.current_step,
+            self.total_steps,
+            done_tokens / (time.time() - self.start_time),
+            self.total_loss / self.report_steps,
+            self.total_correct / self.total_denominator))
+
+        self.total_loss = 0.0
+        self.total_correct = 0.0
+        self.total_denominator = 0.0
+
+
+class T5Trainer(Seq2seqTrainer):
+    pass
+
+
+class PrefixlmTrainer(MlmTrainer):
+    pass
+
+
+str2trainer = {"bert": BertTrainer, "mlm": MlmTrainer, "lm": LmTrainer,
+               "albert": AlbertTrainer, "bilm": BilmTrainer, "cls": ClsTrainer,
+               "seq2seq": Seq2seqTrainer, "t5": T5Trainer}
+
+def worker(proc_id, gpu_ranks, args, model):
+    """
+    Args:
+        proc_id: The id of GPU for single GPU mode;
+                 The id of process (and GPU) for multiprocessing distributed mode.
+        gpu_ranks: List of ranks of each process.
+    """
+    set_seed(args.seed)
+
+    if args.dist_train:
+        rank = gpu_ranks[proc_id]
+        gpu_id = proc_id
+    elif args.single_gpu:
+        rank = None
+        gpu_id = proc_id
+    else:
+        rank = None
+        gpu_id = None
+
+    if args.dist_train:
+        train_loader = str2dataloader[args.target](args, args.dataset_path, args.batch_size, rank, args.world_size, True)
+    else:
+        train_loader = str2dataloader[args.target](args, args.dataset_path, args.batch_size, 0, 1, True)
+
+    if gpu_id is not None:
+        torch.cuda.set_device(gpu_id)
+        model.cuda(gpu_id)
+
+    # Build optimizer.
+    param_optimizer = list(model.named_parameters())
+    no_decay = ["bias", "gamma", "beta"]
+    optimizer_grouped_parameters = [
+        {"params": [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], "weight_decay_rate": 0.01},
+        {"params": [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], "weight_decay_rate": 0.0}
+    ]
+    if args.optimizer in ["adamw"]:
+        optimizer = str2optimizer[args.optimizer](optimizer_grouped_parameters, lr=args.learning_rate, correct_bias=False)
+    else:
+        optimizer = str2optimizer[args.optimizer](optimizer_grouped_parameters, lr=args.learning_rate,
+                                                  scale_parameter=False, relative_step=False)
+    if args.scheduler in ["constant"]:
+        scheduler = str2scheduler[args.scheduler](optimizer)
+    elif args.scheduler in ["constant_with_warmup"]:
+        scheduler = str2scheduler[args.scheduler](optimizer, args.total_steps*args.warmup)
+    else:
+        scheduler = str2scheduler[args.scheduler](optimizer, args.total_steps*args.warmup, args.total_steps)
+
+    if args.fp16:
+        try:
+            from apex import amp
+        except ImportError:
+            raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use fp16 training.")
+        model, optimizer = amp.initialize(model, optimizer, opt_level=args.fp16_opt_level)
+        args.amp = amp
+
+    if args.dist_train:
+        # Initialize multiprocessing distributed training environment.
+        dist.init_process_group(backend=args.backend,
+                                init_method=args.master_ip,
+                                world_size=args.world_size,
+                                rank=rank)
+        model = DistributedDataParallel(model, device_ids=[gpu_id], find_unused_parameters=True)
+        print("Worker %d is training ... " % rank)
+    else:
+        print("Worker is training ...")
+
+    trainer = str2trainer[args.target](args)
+    trainer.train(args, gpu_id, rank, train_loader, model, optimizer, scheduler)
