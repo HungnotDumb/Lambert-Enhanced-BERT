@@ -421,3 +421,224 @@ class BertDataLoader(DataLoader):
 
             src = []
             tgt_mlm = []
+            is_next = []
+            seg = []
+
+            masked_words_num = 0
+
+            for ins in instances:
+                if len(ins) == 4:
+                    src.append(ins[0])
+                    masked_words_num += len(ins[1])
+                    tgt_mlm.append([0] * len(ins[0]))
+                    for mask in ins[1]:
+                        tgt_mlm[-1][mask[0]] = mask[1]
+                    is_next.append(ins[2])
+                    seg.append([1] * ins[3][0] + [2] * (ins[3][1] - ins[3][0]) + [PAD_ID] * (len(ins[0]) - ins[3][1]))
+                else:
+                    src_single, tgt_mlm_single = mask_seq(ins[0], self.tokenizer, self.whole_word_masking, self.span_masking, self.span_geo_prob, self.span_max_length)
+                    masked_words_num += len(tgt_mlm_single)
+                    src.append(src_single)
+                    tgt_mlm.append([0] * len(ins[0]))
+                    for mask in tgt_mlm_single:
+                        tgt_mlm[-1][mask[0]] = mask[1]
+                    is_next.append(ins[1])
+                    seg.append([1] * ins[2][0] + [2] * (ins[2][1] - ins[2][0]) + [PAD_ID] * (len(ins[0]) - ins[2][1]))
+
+            if masked_words_num == 0:
+                continue
+
+            yield torch.LongTensor(src), \
+                torch.LongTensor(tgt_mlm), \
+                torch.LongTensor(is_next), \
+                torch.LongTensor(seg)
+
+
+class MlmDataset(Dataset):
+    def __init__(self, args, vocab, tokenizer):
+        super(MlmDataset, self).__init__(args, vocab, tokenizer)
+        self.full_sentences = args.full_sentences
+
+    def worker(self, proc_id, start, end):
+        print("Worker %d is building dataset ... " % proc_id)
+        set_seed(self.seed)
+        dataset_writer = open("dataset-tmp-" + str(proc_id) + ".pt", "wb")
+        docs_buffer = []
+        for _ in range(self.dup_factor):
+            pos = 0
+            with open(self.corpus_path, mode="r", encoding="utf-8") as f:
+                while pos < start:
+                    f.readline()
+                    pos += 1
+                while True:
+                    line = f.readline()
+                    pos += 1
+
+                    document = [self.vocab.get(CLS_TOKEN)] + self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize(line)) + [self.vocab.get(SEP_TOKEN)]
+
+                    if self.full_sentences:
+                        if len(document) > 0:
+                            docs_buffer.append(document)
+                        if len(docs_buffer) == self.docs_buffer_size:
+                            # Build instances from documents.
+                            all_documents = self.concatenate_docs(docs_buffer)
+                            instances = self.build_instances(all_documents)
+                            # Save instances.
+                            for instance in instances:
+                                pickle.dump(instance, dataset_writer)
+                            # Clear buffer.
+                            docs_buffer = []
+                        if pos >= end:
+                            if len(docs_buffer) > 0:
+                                all_documents = self.concatenate_docs(docs_buffer)
+                                instances = self.build_instances(all_documents)
+                                # Save instances.
+                                for instance in instances:
+                                    pickle.dump(instance, dataset_writer)
+                            break
+                    else:
+                        if len(document) > 0:
+                            instances = self.build_instances(document)
+                            # Save instances.
+                            for instance in instances:
+                                pickle.dump(instance, dataset_writer)
+
+                    if pos >= end:
+                        break
+
+        dataset_writer.close()
+
+    def concatenate_docs(self, docs_buffer):
+        all_documents = []
+        for i in range(len(docs_buffer)):
+            all_documents += docs_buffer[i]
+        return all_documents
+
+    def build_instances(self, all_documents):
+        instances = []
+        instances_num = len(all_documents) // self.seq_length
+        for i in range(instances_num):
+            src = all_documents[i * self.seq_length: (i + 1) * self.seq_length]
+            seg_pos = [len(src)]
+
+            if not self.dynamic_masking:
+                src, tgt = mask_seq(src, self.tokenizer, self.whole_word_masking, self.span_masking, self.span_geo_prob, self.span_max_length)
+                instance = (src, tgt, seg_pos)
+            else:
+                instance = (src, seg_pos)
+
+            instances.append(instance)
+
+        src = all_documents[instances_num * self.seq_length:]
+        seg_pos = [len(src)]
+
+        while len(src) != self.seq_length:
+            src.append(PAD_ID)
+
+        if not self.dynamic_masking:
+            src, tgt = mask_seq(src, self.tokenizer, self.whole_word_masking, self.span_masking, self.span_geo_prob, self.span_max_length)
+            instance = (src, tgt, seg_pos)
+        else:
+            instance = (src, seg_pos)
+
+        instances.append(instance)
+        return instances
+
+
+class MlmDataLoader(DataLoader):
+    def __iter__(self):
+        while True:
+            while self._empty():
+                self._fill_buf()
+            if self.start + self.batch_size >= self.end:
+                instances = self.buffer[self.start:]
+            else:
+                instances = self.buffer[self.start: self.start + self.batch_size]
+
+            self.start += self.batch_size
+
+            src = []
+            tgt = []
+            seg = []
+
+            masked_words_num = 0
+
+            for ins in instances:
+                if len(ins) == 3:
+                    src.append(ins[0])
+                    masked_words_num += len(ins[1])
+                    tgt.append([0] * len(ins[0]))
+                    for mask in ins[1]:
+                        tgt[-1][mask[0]] = mask[1]
+                    seg.append([1] * ins[2][0] + [PAD_ID] * (len(ins[0]) - ins[2][0]))
+                else:
+                    src_single, tgt_single = mask_seq(ins[0], self.tokenizer, self.whole_word_masking, self.span_masking, self.span_geo_prob, self.span_max_length)
+                    masked_words_num += len(tgt_single)
+                    src.append(src_single)
+                    tgt.append([0] * len(ins[0]))
+                    for mask in tgt_single:
+                        tgt[-1][mask[0]] = mask[1]
+                    seg.append([1] * ins[1][0] + [PAD_ID] * (len(ins[0]) - ins[1][0]))
+
+            if masked_words_num == 0:
+                continue
+
+            yield torch.LongTensor(src), \
+                torch.LongTensor(tgt), \
+                torch.LongTensor(seg)
+
+
+class AlbertDataset(Dataset):
+    """
+    Construct dataset for MLM and SOP tasks from the given corpus.
+    Each document consists of multiple sentences,
+    and each sentence occupies a single line.
+    Documents in corpus must be separated by empty lines.
+    """
+
+    def __init__(self, args, vocab, tokenizer):
+        super(AlbertDataset, self).__init__(args, vocab, tokenizer)
+        self.short_seq_prob = args.short_seq_prob
+
+    def worker(self, proc_id, start, end):
+        print("Worker %d is building dataset ... " % proc_id)
+        set_seed(self.seed)
+        document = []
+        dataset_writer = open("dataset-tmp-" + str(proc_id) + ".pt", "wb")
+        for _ in range(self.dup_factor):
+            pos = 0
+            with open(self.corpus_path, mode="r", encoding="utf-8") as f:
+                while pos < start:
+                    f.readline()
+                    pos += 1
+                while True:
+                    line = f.readline()
+                    pos += 1
+                    if not line.strip():
+                        if len(document) >= 1:
+                            instances = self.build_instances(document)
+                            for instance in instances:
+                                pickle.dump(instance, dataset_writer)
+                        document = []
+                    sentence = self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize(line))
+                    if len(sentence) > 0:
+                        document.append(sentence)
+                    if pos >= end - 1:
+                        if len(document) >= 1:
+                            instances = self.build_instances(document)
+                            for instance in instances:
+                                pickle.dump(instance, dataset_writer)
+                        break
+        dataset_writer.close()
+
+    def build_instances(self, document):
+        instances = []
+        instances.extend(self.create_ins_from_doc(document))
+        return instances
+
+    def create_ins_from_doc(self, document):
+        max_num_tokens = self.seq_length - 3
+        target_seq_length = max_num_tokens
+        if random.random() < self.short_seq_prob:
+            target_seq_length = random.randint(2, max_num_tokens)
+  
