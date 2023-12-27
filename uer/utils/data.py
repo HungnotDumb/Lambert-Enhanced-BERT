@@ -1140,4 +1140,18 @@ class PrefixlmDataLoader(DataLoader):
             else:
                 instances = self.buffer[self.start: self.start + self.batch_size]
 
-            self.start += s
+            self.start += self.batch_size
+
+            src = []
+            tgt = []
+            seg = []
+
+            for ins in instances:
+                src.append(ins[0])
+                tgt.append(ins[1])
+                seg.append([1] * ins[2][0] + [2] * (ins[2][1] - ins[2][0]) + [PAD_ID] * (len(ins[0]) - ins[2][1]))
+
+            yield torch.LongTensor(src), \
+                torch.LongTensor(tgt), \
+                torch.LongTensor(seg)
+
