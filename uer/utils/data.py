@@ -641,4 +641,256 @@ class AlbertDataset(Dataset):
         target_seq_length = max_num_tokens
         if random.random() < self.short_seq_prob:
             target_seq_length = random.randint(2, max_num_tokens)
-  
+        instances = []
+        current_chunk = []
+        current_length = 0
+        i = 0
+        while i < len(document):
+            segment = document[i]
+            current_chunk.append(segment)
+            current_length += len(segment)
+            if i == len(document) - 1 or current_length >= target_seq_length:
+                if current_chunk:
+                    a_end = 1
+                    if len(current_chunk) >= 2:
+                        a_end = random.randint(1, len(current_chunk) - 1)
+
+                    tokens_a = []
+                    for j in range(a_end):
+                        tokens_a.extend(current_chunk[j])
+
+                    tokens_b = []
+                    is_wrong_order = 0
+                    for j in range(a_end, len(current_chunk)):
+                        tokens_b.extend(current_chunk[j])
+
+                    if random.random() < 0.5:
+                        is_wrong_order = 1
+                        tmp = tokens_a
+                        tokens_a = tokens_b
+                        tokens_b = tmp
+
+                    truncate_seq_pair(tokens_a, tokens_b, max_num_tokens)
+
+                    src = []
+                    src.append(self.vocab.get(CLS_TOKEN))
+                    src.extend(tokens_a)
+                    src.append(self.vocab.get(SEP_TOKEN))
+                    seg_pos = [len(src)]
+                    src.extend(tokens_b)
+                    src.append(self.vocab.get(SEP_TOKEN))
+                    seg_pos.append(len(src))
+
+                    while len(src) != self.seq_length:
+                        src.append(PAD_ID)
+
+                    if not self.dynamic_masking:
+                        src, tgt_mlm = mask_seq(src, self.tokenizer, self.whole_word_masking, self.span_masking, self.span_geo_prob, self.span_max_length)
+                        instance = (src, tgt_mlm, is_wrong_order, seg_pos)
+                    else:
+                        instance = (src, is_wrong_order, seg_pos)
+
+                    instances.append(instance)
+                current_chunk = []
+                current_length = 0
+            i += 1
+        return instances
+
+
+class AlbertDataLoader(BertDataLoader):
+    '''
+    AlbertDataLoader can reuse the code of BertDataLoader.
+    '''
+    pass
+
+
+class LmDataset(Dataset):
+    def worker(self, proc_id, start, end):
+        print("Worker %d is building dataset ... " % proc_id)
+        set_seed(self.seed)
+        dataset_writer = open("dataset-tmp-" + str(proc_id) + ".pt", "wb")
+        pos = 0
+        with open(self.corpus_path, mode="r", encoding="utf-8") as f:
+            while pos < start:
+                f.readline()
+                pos += 1
+            while True:
+                line = f.readline()
+                pos += 1
+
+                document = self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize(line))
+                document = [self.vocab.get(CLS_TOKEN)] + document + [self.vocab.get(SEP_TOKEN)]
+
+                instances_num = len(document) // (self.seq_length + 1)
+                for i in range(instances_num):
+                    src = document[i * (self.seq_length + 1): (i + 1) * (self.seq_length + 1)]
+                    seg_pos = self.seq_length
+                    pickle.dump((src, seg_pos), dataset_writer)
+
+                src = document[instances_num * (self.seq_length + 1):]
+                if len(src) > 0:
+                    seg_pos = len(src)
+                    while len(src) != self.seq_length + 1:
+                        src.append(PAD_ID)
+                    pickle.dump((src, seg_pos), dataset_writer)
+
+                if pos >= end:
+                    break
+
+        dataset_writer.close()
+
+
+class LmDataLoader(DataLoader):
+    def __iter__(self):
+        while True:
+            while self._empty():
+                self._fill_buf()
+            if self.start + self.batch_size >= self.end:
+                instances = self.buffer[self.start:]
+            else:
+                instances = self.buffer[self.start: self.start + self.batch_size]
+
+            self.start += self.batch_size
+
+            src = []
+            tgt = []
+            seg = []
+
+            for ins in instances:
+                src.append(ins[0][:-1])
+                tgt.append(ins[0][1:])
+                if ins[1] == len(ins[0]):
+                    seg.append([1] * (ins[1] - 1))
+                else:
+                    seg.append([1] * ins[1] + [PAD_ID] * (len(ins[0]) - 1 - ins[1]))
+
+            yield torch.LongTensor(src), \
+                torch.LongTensor(tgt), \
+                torch.LongTensor(seg)
+
+
+class BilmDataset(Dataset):
+    def worker(self, proc_id, start, end):
+        print("Worker %d is building dataset ... " % proc_id)
+        set_seed(self.seed)
+        dataset_writer = open("dataset-tmp-" + str(proc_id) + ".pt", "wb")
+        pos = 0
+        with open(self.corpus_path, mode="r", encoding="utf-8") as f:
+            while pos < start:
+                f.readline()
+                pos += 1
+            while True:
+                line = f.readline()
+                pos += 1
+
+                document = self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize(line))
+
+                instances_num = len(document) // self.seq_length
+                for i in range(instances_num):
+                    src = document[i * self.seq_length: (i + 1) * self.seq_length]
+                    tgt_forward = src[1:] + [self.vocab.get(SEP_TOKEN)]
+                    tgt_backward = [self.vocab.get(CLS_TOKEN)] + src[:-1]
+                    seg = [1] * len(src)
+                    pickle.dump((src, tgt_forward, tgt_backward, seg), dataset_writer)
+
+                src = document[instances_num * self.seq_length:]
+                if len(src) < 1:
+                    continue
+                tgt_forward = src[1:] + [self.vocab.get(SEP_TOKEN)]
+                tgt_backward = [self.vocab.get(CLS_TOKEN)] + src[:-1]
+                seg = [1] * len(src)
+                while len(src) != self.seq_length:
+                    src.append(PAD_ID)
+                    tgt_forward.append(PAD_ID)
+                    tgt_backward.append(PAD_ID)
+                    seg.append(PAD_ID)
+                pickle.dump((src, tgt_forward, tgt_backward, seg), dataset_writer)
+
+                if pos >= end - 1:
+                    break
+
+        dataset_writer.close()
+
+
+class BilmDataLoader(DataLoader):
+    def __iter__(self):
+        while True:
+            while self._empty():
+                self._fill_buf()
+            if self.start + self.batch_size >= self.end:
+                instances = self.buffer[self.start:]
+            else:
+                instances = self.buffer[self.start: self.start + self.batch_size]
+
+            self.start += self.batch_size
+
+            src = []
+            tgt_forward = []
+            tgt_backward = []
+            seg = []
+
+            for ins in instances:
+                src.append(ins[0])
+                tgt_forward.append(ins[1])
+                tgt_backward.append(ins[2])
+                seg.append(ins[3])
+
+            yield torch.LongTensor(src), \
+                torch.LongTensor(tgt_forward), \
+                torch.LongTensor(tgt_backward), \
+                torch.LongTensor(seg)
+
+
+class Seq2seqDataset(Dataset):
+    def __init__(self, args, vocab, tokenizer):
+        super(Seq2seqDataset, self).__init__(args, vocab, tokenizer)
+        self.tgt_seq_length = args.tgt_seq_length
+        self.src_vocab, self.src_tokenizer = vocab, tokenizer
+        self.tgt_tokenizer = args.tgt_tokenizer
+        self.tgt_vocab = self.tgt_tokenizer.vocab
+
+    def worker(self, proc_id, start, end):
+        print("Worker %d is building dataset ... " % proc_id)
+        set_seed(self.seed)
+        dataset_writer = open("dataset-tmp-" + str(proc_id) + ".pt", "wb")
+        pos = 0
+        with open(self.corpus_path, mode="r", encoding="utf-8") as f:
+            while pos < start:
+                f.readline()
+                pos += 1
+            while True:
+                line = f.readline()
+                pos += 1
+
+                if len(line.strip().split("\t")) != 2:
+                    if pos >= end:
+                        break
+                    continue
+                document_src, document_tgt = line.strip().split("\t")
+                src = self.src_tokenizer.convert_tokens_to_ids(self.src_tokenizer.tokenize(document_src))
+                tgt = self.tgt_tokenizer.convert_tokens_to_ids(self.tgt_tokenizer.tokenize(document_tgt))
+
+                src = [self.src_vocab.get(CLS_TOKEN)] + src + [self.src_vocab.get(SEP_TOKEN)]
+                tgt = [self.tgt_vocab.get(CLS_TOKEN)] + tgt + [self.tgt_vocab.get(SEP_TOKEN)]
+                seg = [1] * len(src)
+
+                src, tgt, seg = src[:self.seq_length], tgt[:self.tgt_seq_length + 1], seg[:self.seq_length]
+                while len(src) != self.seq_length:
+                    src.append(PAD_ID)
+                    seg.append(PAD_ID)
+                while len(tgt) != self.tgt_seq_length + 1:
+                    tgt.append(PAD_ID)
+                pickle.dump((src, tgt, seg), dataset_writer)
+
+                if pos >= end:
+                    break
+
+            dataset_writer.close()
+
+
+class Seq2seqDataLoader(DataLoader):
+    def __iter__(self):
+        while True:
+            while self._empty():
+                self._fill_buf()
+        
