@@ -893,4 +893,251 @@ class Seq2seqDataLoader(DataLoader):
         while True:
             while self._empty():
                 self._fill_buf()
-        
+            if self.start + self.batch_size >= self.end:
+                instances = self.buffer[self.start:]
+            else:
+                instances = self.buffer[self.start: self.start + self.batch_size]
+
+            self.start += self.batch_size
+
+            src = []
+            tgt_in = []
+            tgt_out = []
+            seg = []
+
+            for ins in instances:
+                src.append(ins[0])
+                tgt_in.append(ins[1][:-1])
+                tgt_out.append(ins[1][1:])
+                seg.append(ins[2])
+
+            yield torch.LongTensor(src), \
+                torch.LongTensor(tgt_in), \
+                torch.LongTensor(tgt_out), \
+                torch.LongTensor(seg)
+
+
+class T5Dataset(MlmDataset):
+    '''
+    T5 can reuse the code of MlmDataset.
+    '''
+    pass
+
+
+class T5DataLoader(DataLoader):
+    def __iter__(self):
+        while True:
+            while self._empty():
+                self._fill_buf()
+            if self.start + self.batch_size >= self.end:
+                instances = self.buffer[self.start:]
+            else:
+                instances = self.buffer[self.start: self.start + self.batch_size]
+
+            self.start += self.batch_size
+
+            src = []
+            tgt_in = []
+            tgt_out = []
+            seg = []
+
+            tgt_seq_length = 0
+
+            for _, ins in enumerate(instances):
+                if len(ins) == 3:
+                    src_single = ins[0]
+                    tgt_single = ins[1]
+                    seg.append([1] * ins[2][0] + [PAD_ID] * (len(ins[0]) - ins[2][0]))
+                else:
+                    src_single, tgt_single = mask_seq(ins[0], self.tokenizer, self.whole_word_masking, self.span_masking, self.span_geo_prob, self.span_max_length)
+                    seg.append([1] * ins[1][0] + [PAD_ID] * (len(ins[0]) - ins[1][0]))
+
+                MASK_ID = self.vocab.get(MASK_TOKEN)
+                SENTINEL_ID = self.vocab.get(SENTINEL_TOKEN)
+
+                for src_index, _ in tgt_single:
+                    if src_single[src_index] != MASK_ID:
+                        src_single[src_index] = MASK_ID
+
+                tgt_in_single = [self.vocab.get(CLS_TOKEN)]
+                mask_index = 0
+                src_with_sentinel = []
+                for token_id in src_single:
+                    if token_id == MASK_ID:
+                        if len(src_with_sentinel) > 0 and src_with_sentinel[-1] == (SENTINEL_ID - 1):
+                            pass
+                        else:
+                            src_with_sentinel.append(SENTINEL_ID)
+                            tgt_in_single.append(SENTINEL_ID)
+                            SENTINEL_ID += 1
+                        tgt_in_single.append(tgt_single[mask_index][1])
+                        mask_index += 1
+                    else:
+                        src_with_sentinel.append(token_id)
+                tgt_in_single.append(SENTINEL_ID)
+                tgt_in_single.append(self.vocab.get(SEP_TOKEN))
+
+                while len(src_with_sentinel) < len(src_single):
+                    src_with_sentinel.append(PAD_ID)
+
+                if len(tgt_in_single) > tgt_seq_length:
+                    tgt_seq_length = len(tgt_in_single)
+
+                src.append(src_with_sentinel)
+                tgt_in.append(tgt_in_single)
+                tgt_out.append(tgt_in[-1][1:] + [PAD_ID])
+
+            for i in range(len(tgt_in)):
+                while len(tgt_in[i]) != tgt_seq_length:
+                    tgt_in[i].append(PAD_ID)
+                    tgt_out[i].append(PAD_ID)
+
+            yield torch.LongTensor(src), \
+                torch.LongTensor(tgt_in), \
+                torch.LongTensor(tgt_out), \
+                torch.LongTensor(seg)
+
+
+class ClsDataset(Dataset):
+    def worker(self, proc_id, start, end):
+        print("Worker %d is building dataset ... " % proc_id)
+        set_seed(self.seed)
+        f_write = open("dataset-tmp-" + str(proc_id) + ".pt", "wb")
+        pos = 0
+        with open(self.corpus_path, mode="r", encoding="utf-8") as f:
+            while pos < start:
+                line = f.readline()
+                pos += 1
+            while True:
+                line = f.readline()
+                pos += 1
+
+                line = line.strip().split('\t')
+                if len(line) == 2:
+                    label = int(line[0])
+                    text = " ".join(line[1:])
+                    src = [self.vocab.get(t) for t in self.tokenizer.tokenize(text)]
+                    src = [self.vocab.get(CLS_TOKEN)] + src
+                    tgt = label
+                    seg = [1] * len(src)
+                    if len(src) >= self.seq_length:
+                        src = src[:self.seq_length]
+                        seg = seg[:self.seq_length]
+                    else:
+                        while len(src) != self.seq_length:
+                            src.append(PAD_ID)
+                            seg.append(PAD_ID)
+                    pickle.dump((src, tgt, seg), f_write)
+                elif len(line) == 3:  # For sentence pair input.
+                    label = int(line[0])
+                    text_a, text_b = line[1], line[2]
+
+                    src_a = [self.vocab.get(t) for t in self.tokenizer.tokenize(text_a)]
+                    src_a = [self.vocab.get(CLS_TOKEN)] + src_a + [self.vocab.get(SEP_TOKEN)]
+                    src_b = [self.vocab.get(t) for t in self.tokenizer.tokenize(text_b)]
+                    src_b = src_b + [self.vocab.get(SEP_TOKEN)]
+
+                    src = src_a + src_b
+                    seg = [1] * len(src_a) + [2] * len(src_b)
+
+                    if len(src) >= self.seq_length:
+                        src = src[:self.seq_length]
+                        seg = seg[:self.seq_length]
+                    else:
+                        while len(src) != self.seq_length:
+                            src.append(PAD_ID)
+                            seg.append(PAD_ID)
+                    pickle.dump((src, tgt, seg), f_write)
+                else:
+                    pass
+
+                if pos >= end - 1:
+                    break
+
+        f_write.close()
+
+
+class ClsDataLoader(DataLoader):
+    def __iter__(self):
+        while True:
+            while self._empty():
+                self._fill_buf()
+            if self.start + self.batch_size >= self.end:
+                instances = self.buffer[self.start:]
+            else:
+                instances = self.buffer[self.start: self.start + self.batch_size]
+
+            self.start += self.batch_size
+
+            src = []
+            tgt = []
+            seg = []
+
+            for ins in instances:
+                src.append(ins[0])
+                tgt.append(ins[1])
+                seg.append(ins[2])
+
+            yield torch.LongTensor(src), \
+                torch.LongTensor(tgt), \
+                torch.LongTensor(seg)
+
+
+class PrefixlmDataset(Dataset):
+
+    def worker(self, proc_id, start, end):
+        print("Worker %d is building dataset ... " % proc_id)
+        set_seed(self.seed)
+        dataset_writer = open("dataset-tmp-" + str(proc_id) + ".pt", "wb")
+        pos = 0
+        with open(self.corpus_path, mode="r", encoding="utf-8") as f:
+            while pos < start:
+                f.readline()
+                pos += 1
+            while True:
+                line = f.readline()
+                pos += 1
+
+                if len(line.strip().split("\t")) != 2:
+                    if pos >= end:
+                        break
+                    continue
+                document_src, document_tgt = line.strip().split("\t")
+                src = self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize(document_src))
+                tgt = self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize(document_tgt))
+                src = [self.vocab.get(CLS_TOKEN)] + src + [self.vocab.get(SEP_TOKEN)]
+                tgt = tgt + [self.vocab.get(SEP_TOKEN)]
+                seg_pos = [len(src)]
+
+                if seg_pos[0] >= self.seq_length:
+                    continue
+
+                src = src + tgt
+                tgt = [0] * seg_pos[0] + tgt[1:] + [PAD_ID]
+                seg_pos.append(len(src))
+                src, tgt = src[:self.seq_length], tgt[:self.seq_length]
+                while len(src) != self.seq_length:
+                    src.append(PAD_ID)
+                    tgt.append(PAD_ID)
+                if seg_pos[1] > self.seq_length:
+                    seg_pos[1] = self.seq_length
+
+                pickle.dump((src, tgt, seg_pos), dataset_writer)
+
+                if pos >= end:
+                    break
+
+            dataset_writer.close()
+
+
+class PrefixlmDataLoader(DataLoader):
+    def __iter__(self):
+        while True:
+            while self._empty():
+                self._fill_buf()
+            if self.start + self.batch_size >= self.end:
+                instances = self.buffer[self.start:]
+            else:
+                instances = self.buffer[self.start: self.start + self.batch_size]
+
+            self.start += s
